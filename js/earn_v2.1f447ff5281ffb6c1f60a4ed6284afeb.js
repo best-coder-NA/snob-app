@@ -116,7 +116,7 @@ const pools = [
     token0: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',
     token1: '0x846d50248baf8b7ceaa9d9b53bfd12d7d7fbb25a',
     pair: '0x2b532bc0afae65da57eccfb14ff46d16a12de5e6',
-    stake: '0xf2b788085592380bfCAc40Ac5E0d10D9d0b54eEe'
+    stake: '0xf2b788085592380bfCAc40Ac5E0d10D9d0b54eEe',
     gauge: '0x4d16ecff6dfa8f344ba182f09422b86b4d796ab4'
   },
   {
@@ -873,7 +873,7 @@ async function main() {
       pool_nickname: `${token_0_symbol}-${token_1_symbol} ${globe_symbol}`,
       pool_name: `${token_0_symbol}-${token_1_symbol} ${globe_symbol}`,
       globe_symbol: globe_symbol,
-      lp_symbol: lp_symbol
+      lp_symbol: lp_symbol,
       url: null,
       tvl: null,
       pool_weight: null,
