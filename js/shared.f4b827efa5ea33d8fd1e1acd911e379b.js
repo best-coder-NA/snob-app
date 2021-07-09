@@ -37,7 +37,9 @@ const TOKEN_NAMES = {
   "0x99519acb025a0e0d44c3875a4bbf03af65933627": "YFI" ,
   "0xf39f9671906d8630812f9d9863bbef5d523c84ab": "UNI",
   "0xba7deebbfc5fa1100fb055a87773e1e99cd3507a": "DAI",
-  "0x8ce2dee54bb9921a2ae0a63dbb2df8ed88b91dd9": "AAVE"
+  "0x8ce2dee54bb9921a2ae0a63dbb2df8ed88b91dd9": "AAVE",
+  "0x846d50248baf8b7ceaa9d9b53bfd12d7d7fbb25a": "VSO",
+  "0x6e7f5C0b9f4432716bDd0a77a3601291b9D9e985": "SPORE"
 }
 
 const walletcopy = () => {
@@ -265,8 +267,8 @@ const gentop = async () => {
           $('#value-snob').append(`${(currentSNOBTokens / 1e18 + claimableSnowballs).toFixed(4)}`);
           $('#value-usd').append(`${((currentSNOBTokens / 1e18 + claimableSnowballs) * snobPrice).toFixed(2)}`);
           $('#wallet').append(`${(currentSNOBTokens / 1e18).toFixed(4)}`);
-          $('#track-portfolio').html(`<ion-icon name="arrow-redo-outline"></ion-icon> <a href='https://markr.io/#/wallet?address=${walletAddres}' target='_blank'>Track Your Portfolio</a>`);
           $('#governance-snob').append(`In Governance: ${(assetsDeposited.snowball / 1e18).toFixed(4)}`);
+          $('#track-portfolio').html(`<ion-icon name="arrow-redo-outline"></ion-icon> <a href='https://markr.io/#/wallet?address=${walletAddres}' target='_blank'>Track Your Portfolio</a>`);
           if (claimableSnowballs > 0) {
             $('#pending').append(`<ion-icon name="time-outline"></ion-icon> Pending: ${(claimableSnowballs).toFixed(4)}`);
           }else{
@@ -454,7 +456,7 @@ const genpool = async (pool) => {
   const spglDisplayAmt = currentSPGLTokens > 1000 ? (currentSPGLTokens / 1e18).toFixed(8) : 0;
   
   let pair_tvl = 0;
-  let pair_tvl_display = '';
+  let pair_tvl_display = 0;
   
   // window.tvl.pairs.forEach( p => {
   //   if ( pairmatch(p, pool.token0.toLowerCase(), pool.token1.toLowerCase()) ) {
@@ -503,7 +505,7 @@ const genpool = async (pool) => {
   }   
   layoutpool({
     logo_token1: `https://raw.githubusercontent.com/ava-labs/bridge-tokens/main/avalanche-tokens/${pool.token0}/logo.png`,
-    logo_token2: `https://raw.githubusercontent.com/ava-labs/bridge-tokens/main/avalanche-tokens/${pool.token1}/logo.png`,
+    logo_token2: pool.token1 == '0x846d50248baf8b7ceaa9d9b53bfd12d7d7fbb25a' ? 'https://assets.coingecko.com/coins/images/15169/small/versa.PNG' : `https://raw.githubusercontent.com/ava-labs/bridge-tokens/main/avalanche-tokens/${pool.token1}/logo.png`,
     url: `https://app.pangolin.exchange/#/add/${pool.token0.toLowerCase()}/${pool.token1.toLowerCase()}`,
     pool_name: pool.nickname,
     apr: null,
@@ -513,7 +515,7 @@ const genpool = async (pool) => {
     approve: `snowglobe('approve', '${pool.pair}', '${pool.snowglobe}')`,
     stake: `snowglobe('stake','${pool.pair}', '${pool.snowglobe}')`,
     withdraw: `snowglobe('withdraw', '${pool.pair}', '${pool.snowglobe}')`,
-    tvl_display: pair_tvl_display,
+    tvl_display: '',
     pool_share_display: null,
     stake_display: stakeDisplay,
     total_pgl: null,
@@ -533,24 +535,27 @@ const genpool = async (pool) => {
 }
 
 const genAPR = async (pool) => {
-  console.log('genAPR nickname:', pool.nickname)
+  console.log('genAPR nickname:', pool.nickname);
 
-  let results = await Promise.all([
-    loadSingleSnowglobePool(window.app, {}, window.prices, {
-      address: pool.stake,
-      abi: PNG_STAKING_ABI,
-      stakeTokenFunction: "stakingToken",
-      rewardTokenFunction: "rewardsToken"
+  let results, apr;
+  var settings = {
+    "url": "https://snob-backend-api.herokuapp.com/graphql",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "data": JSON.stringify({
+      query: `{PoolsInfoByAddress(address:\"${pool.snowglobe}\"){\r\n  yearlyAPY\r\n  dailyAPY\r\n dailyAPR\r\n  weeklyAPY\r\n}\r\n}`,
+      variables: {}
     })
-  ])
+  };
+  results = await $.ajax(settings);
+  if(results.data.PoolsInfoByAddress){
+    apr = results.data.PoolsInfoByAddress;
 
-  let apr = results[0]
-
-  let token_apr = apr.yearlyAPR / 100;
-  let token_annual_apy = 100 * (1 + token_apr / compounds_per_year) ** compounds_per_year - 100;
-  $(`#${pool.pool_id}-apy`).html(`${token_annual_apy.toFixed(2)}%`)
-  $(`#${pool.pool_id}-apr-daily`).html(`${apr.dailyAPR.toFixed(2)}%`);
-  $(`#${pool.pool_id}-apr-weekly`).html(`${apr.weeklyAPR.toFixed(2)}%`);
-  $(`#${pool.pool_id}-apr-yearly`).html(`${apr.yearlyAPR.toFixed(2)}%`);
-
+    $(`#${pool.pool_id}-apy`).html(`${apr.yearlyAPY.toFixed(2)}%`)
+    $(`#${pool.pool_id}-apr-daily`).html(`${apr.dailyAPR.toFixed(2)}%`);
+    $(`#${pool.pool_id}-apr-weekly`).html(`${(apr.dailyAPR * 7).toFixed(2)}%`);
+    $(`#${pool.pool_id}-apr-yearly`).html(`${(apr.dailyAPR * 365).toFixed(2)}%`);
+  }
 }
